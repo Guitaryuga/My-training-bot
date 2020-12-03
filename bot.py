@@ -61,4 +61,5 @@ def rickroll(update, context):
     print('Вызван /rickroll')
     update.message.reply_text('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
 
-main()
+if __name__ == "__main__":
+    main()
