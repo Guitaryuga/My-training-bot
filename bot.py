@@ -2,6 +2,9 @@ import logging
 import settings
 import ephem
 from datetime import datetime
+from emoji import emojize
+from glob import glob
+from random import randint, choice
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 logging.basicConfig(filename='bot.log', level=logging.INFO)
 
@@ -13,19 +16,28 @@ def main():
     dp.add_handler(CommandHandler("rickrollme", rickroll))
     dp.add_handler(CommandHandler("wordcount", word_counting))
     dp.add_handler(CommandHandler("next_full_moon", next_full_moon))
+    dp.add_handler(CommandHandler("guess", guess_number))
+    dp.add_handler(CommandHandler("shiba", send_shiba_picture))
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
     logging.info("Bot started")
     mybot.start_polling()
     mybot.idle()
 
+def get_smile():
+    smile = choice(settings.USER_EMOJI)
+    smile = emojize(smile, use_aliases=True)
+    return smile
+
 def greet_user(update, context):
+    smile = get_smile()
     print('Вызван /start')
-    update.message.reply_text('Привет, пользователь! Ты вызвал команду /start')
+    update.message.reply_text(f"Здравствуй, пользователь {smile}!")
 
 def talk_to_me(update, context):
-    user_text = update.message.text 
-    print(user_text)
-    update.message.reply_text(user_text)
+    smile = get_smile()
+    username = update.effective_user.first_name
+    text = update.message.text
+    update.message.reply_text(f"Здравствуй, {username} {smile}! Ты написал: {text}")
     
 def goodbye(update,context):  # не работает вместе с предыдущим MessageHandler
     user_text = update.message.text.lower() 
@@ -60,6 +72,33 @@ def next_full_moon(update, context):
 def rickroll(update, context):
     print('Вызван /rickroll')
     update.message.reply_text('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+
+def play_random_numbers(user_number):
+    bot_number = randint(user_number-10, user_number+10)
+    if user_number > bot_number:
+        message = f"Ты загадал {user_number}, я загадал {bot_number}, ты выиграл!"
+    elif user_number == bot_number:
+        message = f"Ты загадал {user_number}, я загадал {bot_number}, ничья!"
+    else:
+        message = f"Ты загадал {user_number}, я загадал {bot_number}, я выиграл!"
+    return message
+
+def guess_number(update, context):
+    if context.args:
+        try:
+            user_number = int(context.args[0])
+            message = play_random_numbers(user_number)
+        except (TypeError, ValueError):
+            message = "Введите целое число"
+    else:
+        message = "Введите целое число"
+    update.message.reply_text(message)
+
+def send_shiba_picture(update, context):
+    shiba_photos_list = glob('images/shiba*.jp*g')
+    shiba_pic_filename = choice(shiba_photos_list)
+    chat_id = update.effective_chat.id
+    context.bot.send_photo(chat_id=chat_id, photo=open(shiba_pic_filename, 'rb'))
 
 if __name__ == "__main__":
     main()
