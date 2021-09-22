@@ -5,7 +5,7 @@ from datetime import datetime
 from emoji import emojize
 from glob import glob
 from random import randint, choice
-from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 logging.basicConfig(filename='bot.log', level=logging.INFO)
 
@@ -21,6 +21,7 @@ def main():
     dp.add_handler(CommandHandler("guess", guess_number))
     dp.add_handler(CommandHandler("shiba", send_shiba_picture))
     dp.add_handler(MessageHandler(Filters.regex('^(Прислать шибера)$'), send_shiba_picture))
+    dp.add_handler(MessageHandler(Filters.location, user_coordinates))
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
     logging.info("Bot started")
     mybot.start_polling()
@@ -28,7 +29,7 @@ def main():
 
 
 def main_keyboard():
-    return ReplyKeyboardMarkup([['Прислать шибера']])
+    return ReplyKeyboardMarkup([['Прислать шибера', KeyboardButton('Мои координаты', request_location=True)]])
 
 
 def get_smile(user_data):
@@ -118,6 +119,12 @@ def send_shiba_picture(update, context):
     shiba_pic_filename = choice(shiba_photos_list)
     chat_id = update.effective_chat.id
     context.bot.send_photo(chat_id=chat_id, photo=open(shiba_pic_filename, 'rb'), reply_markup=main_keyboard())
+
+
+def user_coordinates(update, context):
+    context.user_data['emoji'] = get_smile(context.user_data)
+    coords = update.message.location
+    update.message.reply_text(f"Ваши координаты {coords} {context.user_data['emoji']}!", reply_markup=main_keyboard())
 
 
 if __name__ == "__main__":
